@@ -169,63 +169,73 @@ def reinforcement_learning():
         print('Odd Even: oddeven')
         print('Attackers Defenders: attackersdefenders')
     
+    if game_type == 'zero_sum':
+        pay_one = np.array([0.1, 0.9])
+        pay_two = np.array([0.1, 0.9])
+    elif sys.argv[4] == 'fail':
+        pay_one = np.array([ 0.1, 0.9])
+        pay_two = np.array([0.9, 0.1])
+    elif sys.argv[4] == 'succeed':
+        pay_one = np.array([0.1 , 0.9])
+        pay_two = np.array([0.1, 0.9])
+
     moves = np.array([0,1])
     #Init Values PLAYER1
-    valueQ_p1 = np.array([[1.0,1.0],[1.0,1.0]])
+    valueQ_p1 = np.array([[1,1],[1,1]])
     valueV_p1 = 1.0
-    valueP_p1 = np.array([0.5,0.5])
+    valueP_p1 = pay_one
     #Init Values PLAYER2
     valueQ_p2 = np.array([[1.0,1.0],[1.0,1.0]])
     valueV_p2 = 1.0
-    valueP_p2 = np.array([0.5,0.5])
+    valueP_p2 = pay_two
 
     def Reward(action1,action2, player):
         player1reward = pay_matrix_player_1[action1][action2]
-        if player == 1:
+        if game_type == 'zero_sum':
+            if player == 1:
+                return player1reward
+            elif player == 2:
+                if player1reward < 0:
+                    return(abs(player1reward))
+                else:
+                    return 0-player1reward
+        elif game_type == 'coordination':
             return player1reward
-        elif player == 2:
-            if player1reward < 0:
-                return(abs(player1reward))
-            else:
-                return 0-player1reward
 
     def chooseMove(moves,weights):
+        # choose between two moves via weights
         return choices(moves,weights,k=1)[0]
 
-    def updateQvalues(a, reward, move,moveO, player):
+    def updateQvalues(alpha, reward, move,moveOp, player):
         if player == 1:
-            return (1-alpha)*valueQ_p1[move][moveO] + alpha*move
+            return (1-alpha)*valueQ_p1[move][moveOp] + alpha*move
         elif player == 2:
-            return (1-a)*valueQ_p2[move][moveO] + a*move
+            return (1-alpha)*valueQ_p2[move][moveOp] + alpha*move
 
     def solveLinearProgram(Q):
         c = np.array([[0.0,0.0,1.0]])
         b_ub = np.array([0.0,0.0])
         b_eq = np.array([1.0])
         A_eq = np.array([[1.0,1.0,0.0]])
-        x0_bounds = (0.0,1.0)
-        x1_bounds = (0.0,1.0)
-        x2_bounds = (-1.0, 1.0)
-        bounds = [x0_bounds, x1_bounds, x2_bounds]
-
-        test1 = []
-        test1.append(Q[0][0])
-        test1.append(Q[1][0])
-        test1.append(1)
-
-        test2 = []
-        test2.append(Q[0][1])
-        test2.append(Q[1][1])
-        test2.append(1)
+        bounds = [(0.0,1.0), (0.0,1.0), (-1.0, 1.0)]
 
         #Inequality constrain matrix
         A_ub = []
-        A_ub.append(test1)
-        A_ub.append(test2)
+        A_ub.append([Q[0][0], Q[1][0], 1])
+        A_ub.append([Q[0][1], Q[1][1], 1])
 
-        result = linprog(c,A_ub=A_ub,b_ub=b_ub,A_eq=A_eq,b_eq=b_eq,bounds=bounds)
+        result = linprog(c,A_ub,b_ub,A_eq,b_eq,bounds)
 
-        return result.x[0],result.x[1]
+        if result.success:
+            return result.x[0],result.x[1]
+        else:
+            print('Linear Program Fail')           
+
+    def choose_random_or_policy(valueP):
+        if random() > exploration:
+            return valueP
+        else:
+            return np.array([0.5,0.5])
 
     def computeValue(policy,Q, player):
         if player == 1:
@@ -237,15 +247,9 @@ def reinforcement_learning():
             move2 = policy[0]*Q[0][1] + policy[1]*Q[1][1]
             return max(move1,move2)
 
-    def choose_random_or_policy(valueP):
-        if random() > exploration:
-            return valueP
-        else:
-            return np.array([0.5,0.5])
-
-    alpha = 1.0
+    alpha = 1
     exploration = 0.5
-    decay = 0.99
+    decay = 0.95
 
     player1play =[]
     player2play =[]
@@ -289,16 +293,22 @@ def reinforcement_learning():
         valueP_p1[0], valueP_p1[1] = solveLinearProgram(valueQ_p1)
         valueP_p2[0], valueP_p2[1] = solveLinearProgram(valueQ_p2)
 
+        # Game Value
+        value_game_p1 = computeValue(valueP_p1,valueQ_p1, 1)
+        value_game_p2 = computeValue(valueP_p2,valueQ_p2, 2)
+
         # Updating alpha
         alpha = alpha*decay
 
     # Displaying Results
+    print(value_game_p1)
+    print(value_game_p2)
     player1strategy = valueP_p1
     player2strategy = valueP_p2
     print('After {} iterations we get:'.format(iteration))
     print('Column player strategy:')
     print(str(player1strategy) + '\nTotal column player payoff:\n' + str(totalpayoff1))
-    print('Row player')
+    print('Row player strategy:')
     print(str(player2strategy) + '\nTotal row player payoff:\n' + str(totalpayoff2))
     x = np.arange(0, (iteration-1), 1)
     if sys.argv[2] == 'oddeven':
