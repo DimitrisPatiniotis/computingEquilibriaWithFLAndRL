@@ -126,7 +126,7 @@ def fictitious_play():
     print('After {} iterations we get:'.format(iteration))
     print('Column player strategy:')
     print(str(player1strategy) + '\nTotal column player payoff:\n' + str(totalpayoff1))
-    print('Row player')
+    print('Row player strategy:')
     print(str(player2strategy) + '\nTotal row player payoff:\n' + str(totalpayoff2))
 
     x = np.arange(0, (iteration-1), 1)
