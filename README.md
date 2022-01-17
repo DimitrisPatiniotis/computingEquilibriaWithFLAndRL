@@ -29,7 +29,6 @@ Arguments expected (outcome only applies when testing Coordination game with Fic
 
 ```
 $ python3 compute_equilibria.py <algorithm> <game> <iterations> <outcome>
-
 ```
 
 To test Fictitious Play with 10000 iterations for each game run:
@@ -39,7 +38,6 @@ $ python3 compute_equilibria.py fp oddeven 10000
 $ python3 compute_equilibria.py fp attackersdefenders 10000
 $ python3 compute_equilibria.py fp coordination 10000 fail
 $ python3 compute_equilibria.py fp coordination 10000 succeed
-
 ```
 
 ## Reinforcement Learning
@@ -53,5 +51,4 @@ $ python3 compute_equilibria.py rl oddeven 10000
 $ python3 compute_equilibria.py rl attackersdefenders 10000
 $ python3 compute_equilibria.py rl coordination 10000 fail
 $ python3 compute_equilibria.py rl coordination 10000 succeed
-
 ```
