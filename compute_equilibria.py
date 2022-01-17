@@ -104,9 +104,6 @@ def fictitious_play():
         if i>0:
             play1average.append(np.average(player1play))
             play2average.append(np.average(player2play))
-        # print(payoff1, payoff2)
-        # print('Column player matrix: ' + str(pay_one) + ' so action taken ' +  str(action_one) + ' with eventual payoff ' + str(payoff1))
-        # print('Row player matrix: ' + str(pay_two) + ' so action taken ' +  str(action_two) + ' with eventual payoff ' + str(payoff2) + '\n')
         
         pay_one[action_two] += 1
         pay_two[action_one] += 1
