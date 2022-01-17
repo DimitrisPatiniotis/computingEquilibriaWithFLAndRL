@@ -2,17 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-def main():
-    try:
-        if sys.argv[1] == 'fl':
-            fictitious_play()
-        if sys.argv[1] == 'rl':
-            reinforcement_learning()
-    except:
-        print('Invalid input')
-        print('Arguments expected: <algorithm> <game> <iterations>')
-        print('Algorithms: \nFictitious Play \'fl\'\nReinforcement Learning \'rl\'')
-        print('Game: \nOdd Even: oddeven\nattackersdefenders')
+odd_even_player_1_payoff = np.array([
+            [1, -1],
+            [-1, 1]
+        ])
+attackers_defenders_player_1_payoff = np.array([
+            [-2, 3],
+            [3, -4]
+        ])
+coordination_player_1_payoff = np.array([
+            [1, -1],
+            [-1, 1]
+        ])
 
 def fictitious_play():
     try:
@@ -25,23 +26,33 @@ def fictitious_play():
         iteration = 10000
 
     if sys.argv[2] == 'oddeven':
-        pay_matrix_player_1 = np.array([
-            [1, -1],
-            [-1, 1]
-        ])
+        pay_matrix_player_1 = odd_even_player_1_payoff
+        game_type = 'zero_sum'
     elif sys.argv[2] == 'attackersdefenders':
-        pay_matrix_player_1 = np.array([
-            [-2, 3],
-            [3, -4]
-        ])
+        pay_matrix_player_1 = attackers_defenders_player_1_payoff
+        game_type = 'zero_sum'
+    elif sys.argv[2] == 'coordination':
+        if sys.argv[4]:
+            pay_matrix_player_1 = coordination_player_1_payoff
+            game_type = 'coordination'
+        else:
+            print('Please choose a valid input')
+            print('Please choose \'fail\' or \'succeed\'')
     else:
         print('Please choose a valid input')
         print('Odd Even: oddeven')
         print('Attackers Defenders: attackersdefenders')
 
     # Setting starting values
-    pay_one = np.array([1 , 0])
-    pay_two = np.array([0, 1])
+    if game_type == 'zero_sum':
+        pay_one = np.array([0 , 0.5])
+        pay_two = np.array([0.5, 0])
+    elif sys.argv[4] == 'fail':
+        pay_one = np.array([0 , 0.5])
+        pay_two = np.array([0.5, 0])
+    elif sys.argv[4] == 'succeed':
+        pay_one = np.array([0 , 0.5])
+        pay_two = np.array([0, 0.5])
 
     # Getting max payof move when havving
     def get_same(matrix):
@@ -57,10 +68,13 @@ def fictitious_play():
             return 0
 
     def take_action(matrix, player):
-        if player == 1:
+        if game_type == 'zero_sum':
+            if player == 1:
+                return get_same(matrix)
+            elif player == 2:
+                return get_dif(matrix)
+        elif game_type == 'coordination':
             return get_same(matrix)
-        elif player == 2:
-            return get_dif(matrix)
 
     player1play =[]
     player2play =[]
@@ -73,11 +87,15 @@ def fictitious_play():
         action_one = take_action(pay_one, 1)
         action_two = take_action(pay_two, 2)
         payoff1 = pay_matrix_player_1[action_one,action_two]
+        
+        if game_type == 'zero_sum':
+            if payoff1 < 0:
+                payoff2 = abs(payoff1)
+            else:
+                payoff2 = 0 - payoff1
+        elif game_type == 'coordination':
+            payoff2 = payoff1
 
-        if payoff1 < 0:
-            payoff2 = abs(payoff1)
-        else:
-            payoff2 = 0 - payoff1
         totalpayoff1 += payoff1
         totalpayoff2 += payoff2
         if i>0:
@@ -104,27 +122,55 @@ def fictitious_play():
     player2strategy.append(rateof0)
     player2strategy.append(rateof1)
 
+    # Players final stats
+    print('After {} iterations we get:'.format(iteration))
+    print('Column player strategy:')
+    print(str(player1strategy) + '\nTotal column player payoff:\n' + str(totalpayoff1))
+    print('Row player')
+    print(str(player2strategy) + '\nTotal row player payoff:\n' + str(totalpayoff2))
+
     x = np.arange(0, (iteration-1), 1)
     if sys.argv[2] == 'oddeven':
         plt.title('Odd Even with Fictitious Play')
     elif sys.argv[2] == 'attackersdefenders':
         plt.title('Attackers Defenders with Fictitious Play')
+    elif sys.argv[2] == 'coordination':
+        plt.title('Coordination with Fictitious Play {}'.format(sys.argv[4]))
     plt.xlabel("Iterations")
-    plt.ylabel("Relative move frequencey")
+    plt.ylabel("Relative move frequency")
     plt.plot(x, play1average, label='Column Player')
     plt.plot(x, play2average, label='Row Player')
     plt.legend()
     plt.show()
 
-    # Players final stats
-    print('After {} iterations we get:'.format(iteration))
-    print('Column player')
-    print(player1strategy, totalpayoff1)
-    print('Row player')
-    print(player2strategy, totalpayoff2)
+
 
 def reinforcement_learning():
     print('Reinforcement Learning Not Yet Available')
+
+
+def main():
+    
+    if sys.argv[1] == 'fp':
+        if sys.argv[2] == 'coordination':
+            try:
+                if sys.argv[4] == 'fail' or sys.argv[4] == 'succeed':
+                    fictitious_play()
+                else:
+                    print('Please choose \'fail\' or \'succeed\' for your coordination game')
+            except:
+                print('Please choose \'fail\' or \'succeed\' for your coordination game')
+        else:
+            fictitious_play()
+    elif sys.argv[1] == 'rl':
+        reinforcement_learning()
+    else:
+        print('Invalid input')
+        print('Arguments expected: <algorithm> <game> <iterations> <outcome>')
+        print('Algorithms: \nFictitious Play \'fp\'\nReinforcement Learning \'rl\'')
+        print('Game: \nOdd Even: oddeven\nattackersdefenders')
+        print('If you choose coordination as a final argument choose \'fail\' or \'succeed\'')
+
 
 if __name__ == "__main__":
     main()
